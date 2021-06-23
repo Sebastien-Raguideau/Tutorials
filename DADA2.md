@@ -9,7 +9,7 @@
 3) Phyloseq for diversity and graphs
 4) Vegan with adonis/nmds
 
-## DADA2
+## 1) DADA2
 In the terminal go to Projects and create the folder we will be using for this analysis, AD_16S 
 
 <details><summary>Reveal commands</summary>
@@ -75,7 +75,7 @@ We definetely want to use the options :  trunclen, maxN, maxEE, truncQ, rm.phix,
 <details><summary> Answer part3</summary>
 <p>
 
-out =  filterAndTrim(R1_files,Filtered_R1,R2_files,Filtered_R2,truncLen=c(240,160),maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,compress=TRUE, verbose=TRUE,multithread=TRUE)
+    Log_filtering =  filterAndTrim(R1_files,Filtered_R1,R2_files,Filtered_R2,truncLen=c(240,160),maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,compress=TRUE, verbose=TRUE,multithread=TRUE)
 
 </p>
 </details>
@@ -98,8 +98,57 @@ This is the most time consumming part of the pipeline.
 <details><summary> If it takes too long</summary>
 <p>
 
-readRDS(file  =  "/home/ubuntu/PreRun/AD16S/errors_R1.rds")
-readRDS(file  =  "/home/ubuntu/PreRun/AD16S/errors_R2.rds")
+    readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R1.rds")
+    readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R2.rds")
 
 </p>
 </details>
+
+Let's have a look at the error model that dada2 will be using : 
+
+    pdf("Errors_learned.pdf")
+    plotErrors(Error_R1, nominalQ=TRUE)
+    plotErrors(Error_R2, nominalQ=TRUE)
+    dev.off()
+
+![alt tag](/figs/Error_learned.png)
+
+Can you intuite what the red and black lines correspond to? 
+
+### Dereplication
+
+    Derep_R1 <- derepFastq(Filtered_R1, verbose=TRUE)
+    Derep_R2 <- derepFastq(Filtered_R2, verbose=TRUE)
+
+### Error correction
+
+    dada_R1 <- dada(Derep_R1, err=Error_R1, multithread=TRUE,pool=TRUE)
+    dada_R2 <- dada(Derep_R2, err=Error_R2, multithread=TRUE,pool=TRUE)
+
+### Merge reads 
+
+    mergers <- mergePairs(dada_R1, Derep_R1, dada_R2, Derep_R2, verbose=TRUE)
+
+### Chimera
+
+    Seqtab <- makeSequenceTable(mergers)
+    Seqtab.nochim <- removeBimeraDenovo(Seqtab, method="consensus", verbose=TRUE)
+
+### Summary
+
+    getN <- function(x) sum(getUniques(x))
+    track <- cbind(Log_filtering, sapply(dada_R1, getN), sapply(dada_R2, getN), sapply(mergers, getN), rowSums(Seqtab.nochim))
+    colnames(track) <- c("input", "filtered", "denoised_R1", "denoised_R2", "merged", "nonchim")
+    rownames(track) <- sample.names
+    track
+
+### Taxonomic annotation
+
+    taxa <- assignTaxonomy(Seqtab.nochim, "~/seb/Database/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+    taxa <- addSpecies(taxa, "~/seb/Database/silva_species_assignment_v132.fa.gz")
+
+#### Results
+
+    write.csv(Seqtab.nochim,paste(out,'sequence_table.csv',sep="/"))
+    write.csv(taxa,paste(out,'taxonomy_table.csv',sep="/"))
+
