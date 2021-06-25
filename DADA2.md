@@ -29,20 +29,14 @@ Let's define the path to our dataset as well as the path to our output folder
     path_data = "/home/ubuntu/Data/AD/16S/data"
     path_out = "/home/ubuntu/Projects/AD_16S"
 
-
-    R1_files=sort(Sys.glob(paste(path_data,"*R1*",sep="/"), dirmark = FALSE))
-    R2_files=gsub("R1","R2",R1_files)
-    
-    temp_filter_path = paste(path_out,"/temp",sep ="")
-    dir.create(temp_filter_path)
-    
-    sample.name <- gsub("_R1.fastq","",basename(R1_files))
-    Filtered_R1 <- file.path(temp_filter_path, paste0(sample.name, "_R1_Filtered.fastq"))
-    Filtered_R2 <- file.path(temp_filter_path, paste0(sample.name, "_R2_Filtered.fastq"))
-
 ### Read quality
 Before starting any sort of analysis we need to be sure that the reads are of good quality. 
 Dada2 allows us to do so easily 
+
+    R1_files=sort(Sys.glob(paste(path_data,"*R1*",sep="/"), dirmark = FALSE))
+    R2_files=gsub("R1","R2",R1_files)
+
+**plotQualityProfile** to ... plot fastq files quality as a function of position alon the read
 
     pdf("quality.pdf")
     plotQualityProfile(R1_files)
@@ -59,7 +53,7 @@ There is a pattern in quality, describe what can be seen.
 
 We are going to filter quality using the  `filterAndTrim`function, first we need to create file path corresponding to clean/trimmed/filtered reads : 
 
-    temp_filter_path = paste(out,"/temp",sep ="")
+    temp_filter_path = paste(path_out,"/temp",sep ="")
     dir.create(temp_filter_path)
     
     sample.name <- gsub("_R1.fastq","",basename(R1_files))
@@ -157,13 +151,13 @@ How many different sequences do we end up with?
 
 ### Taxonomic annotation
 
-    taxa <- assignTaxonomy(Seqtab.nochim, "~/seb/Database/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
-    taxa <- addSpecies(taxa, "~/seb/Database/silva_species_assignment_v132.fa.gz")
+    taxa <- assignTaxonomy(Seqtab.nochim, "~/Databases/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
+    taxa <- addSpecies(taxa, "~/Databases/silva_species_assignment_v132.fa.gz")
 
 #### Intermediary Results
 
-    write.csv(Seqtab.nochim,paste(out,'sequence_table.csv',sep="/"))
-    write.csv(taxa,paste(out,'taxonomy_table.csv',sep="/"))
+    write.csv(Seqtab.nochim,paste(path_out,'sequence_table.csv',sep="/"))
+    write.csv(taxa,paste(path_out,'taxonomy_table.csv',sep="/"))
 
 # 2) Phyloseq
 Phyloseq is a R library for handling taxonomy data, it contain multiple handy function for ploting diversity, taxonomic profile/diversity .... More documentation at https://joey711.github.io/phyloseq/
@@ -224,7 +218,7 @@ This gives use all phylum, let's get only the 10 most abundant, using the functi
 
 Save the plot : 
 
-    pdf(paste(out,"phylum_profile.pdf",sep="/"))
+    pdf(paste(path_out,"phylum_profile.pdf",sep="/"))
     print(p1)
     print(p2)
     dev.off() 
@@ -232,7 +226,7 @@ Save the plot :
 ### Richness plot
 Using the function **plot_richness** allows to .... plot diverse richness measures
 
-    pdf(paste(out,"Richness.pdf",sep="/"))
+    pdf(paste(path_out,"Richness.pdf",sep="/"))
     plot_richness(ps,x="week",measures=c('Chao1','Simpson'),color="ch4...")
     dev.off()
     
@@ -257,7 +251,7 @@ Looking at this plot there seems to be an outlier. Let's remove it and redo this
 
 Save the plots 
 
-    pdf(paste(out,"NMDS.pdf",sep="/"))
+    pdf(paste(path_out,"NMDS.pdf",sep="/"))
     print(p1)
     print(p2)
     dev.off()
