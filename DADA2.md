@@ -33,7 +33,7 @@ Let's define the path to our dataset as well as the path to our output folder
     R1_files=sort(Sys.glob(paste(path_data,"*R1*",sep="/"), dirmark = FALSE))
     R2_files=gsub("R1","R2",R1_files)
     
-    temp_filter_path = paste(out,"/temp",sep ="")
+    temp_filter_path = paste(path_out,"/temp",sep ="")
     dir.create(temp_filter_path)
     
     sample.name <- gsub("_R1.fastq","",basename(R1_files))
