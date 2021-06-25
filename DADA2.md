@@ -1,13 +1,10 @@
 # 16S processing tutoriel
-### Intro : 
-- quick reminder of what the data : 16S region selection, paired reads, fastq files 
-- Dataset is a time serie of 10 samples from AD, additional infos on that particular industrial AD, feed/....
+Reminder
+![alt tag](16S.png)
 
 ### Plan 
 1) Using dada2 
-2) asv vs otu 
 3) Phyloseq for diversity and graphs
-4) Vegan with adonis/nmds
 
 ## 1) DADA2
 In the terminal go to Projects and create the folder we will be using for this analysis, AD_16S 
@@ -90,7 +87,7 @@ Let's look at the quality of currents these filtered reads.
 
 ### Learning the error rates
 This is the most time consumming part of the pipeline. 
-**Explain error rate estimation.**
+
 
     Error_R1 <- learnErrors(Filtered_R1, multithread=TRUE)
     Error_R2 <- learnErrors(Filtered_R2, multithread=TRUE)
@@ -129,6 +126,7 @@ Can you intuite what the red and black lines correspond to?
 
     mergers <- mergePairs(dada_R1, Derep_R1, dada_R2, Derep_R2, verbose=TRUE)
 
+
 ### Chimera
 
     Seqtab <- makeSequenceTable(mergers)
@@ -139,16 +137,108 @@ Can you intuite what the red and black lines correspond to?
     getN <- function(x) sum(getUniques(x))
     track <- cbind(Log_filtering, sapply(dada_R1, getN), sapply(dada_R2, getN), sapply(mergers, getN), rowSums(Seqtab.nochim))
     colnames(track) <- c("input", "filtered", "denoised_R1", "denoised_R2", "merged", "nonchim")
-    rownames(track) <- sample.names
+    rownames(track) <- sample.name
     track
+
+Why does the numbers or reads goes down as a result of merging? 
+The number of chimera is in the unit why is does the counts diminution is bigger than that? 
+How many different sequences do we end up with?
 
 ### Taxonomic annotation
 
     taxa <- assignTaxonomy(Seqtab.nochim, "~/seb/Database/silva_nr_v132_train_set.fa.gz", multithread=TRUE)
     taxa <- addSpecies(taxa, "~/seb/Database/silva_species_assignment_v132.fa.gz")
 
-#### Results
+#### Intermediary Results
 
     write.csv(Seqtab.nochim,paste(out,'sequence_table.csv',sep="/"))
     write.csv(taxa,paste(out,'taxonomy_table.csv',sep="/"))
 
+# 2) Phyloseq
+Phyloseq is a R library for handling taxonomy data, it contain multiple handy function for ploting diversity, taxonomic profile/diversity .... More documentation at https://joey711.github.io/phyloseq/
+### Creating a phyloseq object
+The first step needed is the most complicated one, creating the phyloseq object. 
+For most application the phyloseq object need at least 
+- an "otu_table" : a table of counts of otus/variants ... 
+- a taxonomic table : corresponding taxonomic annotation for each otus/variant
+- a metadata table : it allows to use the full power of the phyloseq and integrating/representing easily your data. 
+
+First load the library and the metadata
+
+     library(phyloseq)
+     metadata <- read.table("/home/ubuntu/Data/AD/16S/metadata.tsv", sep="\t", header=TRUE, row.names=1)
+     str(metadata)
+
+Then let's create a phyoseq object
+
+     ps=phyloseq(otu_table(Seqtab.nochim, taxa_are_rows=FALSE),tax_table(taxa),sample_data(metadata))
+
+
+Bioinformatic pratical :  try to interpret the error message and solve the issue
+<details><summary> Answer</summary>
+<p>
+Try first to find some information on the internet
+<details><summary> Answer part2</summary>
+<p>
+The issue is related to samples names as defined inside Seqtab.nochim, check what the sample names are there and compare these to the sample names in metadata, you need to make it so they are identical.
+<details><summary> Answer part3</summary>
+<p>
+
+    asv_table = otu_table(Seqtab.nochim, taxa_are_rows=FALSE)
+    sample_names(asv_table) = gsub("_R1_Filtered.fastq","",sample_names(asv_table)) 
+    ps=phyloseq(asv_table,tax_table(taxa),sample_data(metadata))
+
+</p>
+</details>
+</p>
+</details>
+</p>
+</details>
+
+### Taxonomy profile
+Let's look at phylum level taxonomy profile using the function **tax_glom**
+
+    ps_phylum=tax_glom(ps, "Phylum")
+    p1 = plot_bar(ps_phylum, fill="Phylum")
+    
+This gives use all phylum, let's get only the 10 most abundant, using the function **prune_taxa**
+
+    top10= names(sort(colSums(otu_table(ps_phylum)),decreasing=TRUE))[1:10]
+    ps_phylumN =  transform_sample_counts(ps_phylum, function(variant) variant/sum(variant))
+    ps_phylumN.top10=prune_taxa(top10, ps_phylumN)
+    p2 = plot_bar(ps_phylumN.top10, x="week", fill="Phylum")
+
+Save the plot : 
+
+    pdf(paste(out,"phylum_profile.pdf",sep="/"))
+    print(p1)
+    print(p2)
+    dev.off() 
+
+### Richness plot
+Using the function **plot_richness** allows to .... plot diverse richness measures
+
+    pdf(paste(out,"Richness.pdf",sep="/"))
+    plot_richness(ps,x="week",measures=c('Chao1','Simpson'),color="ch4...")
+    dev.off()
+    
+### NMDS plot
+A Nmds plot is an ordination plot : a method to represent a high dimensional object in a 2 dimensional plane. We have 10 samples with ~ 500 coordinates and we want to represente that with only about 2 (X,Y). The 
+
+    ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+    ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+    p1 = plot_ordination(ps.prop, ord.nmds.bray, title="Bray NMDS",label="week",color="ch4...")
+
+What does rmse/resid means? 
+Looking at this plot there seems to be an outlier. Let's remove it and redo this.
+
+    ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+    ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
+    p2 = plot_ordination(ps.prop, ord.nmds.bray, title="Bray NMDS",label="week",color="ch4...")
+    
+Save the plots 
+
+    pdf(paste(out,"NMDS.pdf",sep="/"))
+    print(p1)
+    print(p2)
+    dev.off()
