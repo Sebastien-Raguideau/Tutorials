@@ -1,5 +1,6 @@
 # 16S processing tutoriel
-Reminder
+16S sequencing is done by selectively targeting some specific conserved regions of the 16s ribosomal RNA. This is done using primer designed to correspond exactly to the conserved regions so that all reads start exactly from the conserved region and span the variable region from which we can infer taxonomy. Primers/Amplicons are designed/selected so that Forward and Reverse reads starting from each side of the amplicon may meet in the midle and overlap. 
+
 ![alt tag](16s-gene.png)
 
 ### Plan 
@@ -7,7 +8,9 @@ Reminder
 3) Phyloseq for diversity and graphs
 
 ## 1) DADA2
-In the terminal go to Projects and create the folder we will be using for this analysis, AD_16S 
+Dada2 is a denoising algorithm. It aims at distinguishing differences between variants and read sequencing substitution errors. It output ASV for amplicon sequence variants. ASV are higher resolutions than OTUs and aim at a variant level resolutions.
+
+To start, let's create an output folder where we will do this analysis, AD_16S. 
 
 <details><summary>Reveal commands</summary>
 <p>
@@ -15,6 +18,7 @@ In the terminal go to Projects and create the folder we will be using for this a
 ```
 cd ~/Projects
 mkdir AD_16S
+cd AD_16S
 ```
 
 </p>
@@ -23,6 +27,8 @@ mkdir AD_16S
 Launch R and load library needed:
 
     library(dada2)
+
+This library contains all the functions from dada2.
 
 Let's define the path to our dataset as well as the path to our output folder
 
