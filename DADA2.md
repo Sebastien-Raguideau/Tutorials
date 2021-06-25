@@ -106,8 +106,8 @@ This is the most time consumming part of the pipeline.
 <details><summary> If it takes too long</summary>
 <p>
 
-    readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R1.rds")
-    readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R2.rds")
+    Error_R1 = readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R1.rds")
+    Error_R2 = readRDS(file  =  "/home/ubuntu/Prerun/AD16S/errors_R2.rds")
 
 </p>
 </details>
