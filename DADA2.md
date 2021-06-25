@@ -1,6 +1,6 @@
 # 16S processing tutoriel
 Reminder
-![alt tag](16S.png)
+![alt tag](16s-gene.png)
 
 ### Plan 
 1) Using dada2 
@@ -200,13 +200,16 @@ Let's look at phylum level taxonomy profile using the function **tax_glom**
 
     ps_phylum=tax_glom(ps, "Phylum")
     p1 = plot_bar(ps_phylum, fill="Phylum")
-    
+
+![alt tag](./figs/taxa.png)
+
 This gives use all phylum, let's get only the 10 most abundant, using the function **prune_taxa**
 
     top10= names(sort(colSums(otu_table(ps_phylum)),decreasing=TRUE))[1:10]
     ps_phylumN =  transform_sample_counts(ps_phylum, function(variant) variant/sum(variant))
     ps_phylumN.top10=prune_taxa(top10, ps_phylumN)
     p2 = plot_bar(ps_phylumN.top10, x="week", fill="Phylum")
+
 
 Save the plot : 
 
@@ -222,6 +225,8 @@ Using the function **plot_richness** allows to .... plot diverse richness measur
     plot_richness(ps,x="week",measures=c('Chao1','Simpson'),color="ch4...")
     dev.off()
     
+![alt tag](./figs/diversity.png)
+
 ### NMDS plot
 A Nmds plot is an ordination plot : a method to represent a high dimensional object in a 2 dimensional plane. We have 10 samples with ~ 500 coordinates and we want to represente that with only about 2 (X,Y). The 
 
@@ -232,10 +237,13 @@ A Nmds plot is an ordination plot : a method to represent a high dimensional obj
 What does rmse/resid means? 
 Looking at this plot there seems to be an outlier. Let's remove it and redo this.
 
-    ps.prop <- transform_sample_counts(ps, function(otu) otu/sum(otu))
+    ps_clean <- prune_samples((rownames(sample_data(ps)) !="AD7_W40"), ps)
+    ps.prop <- transform_sample_counts(ps_clean, function(otu) otu/sum(otu))
     ord.nmds.bray <- ordinate(ps.prop, method="NMDS", distance="bray")
     p2 = plot_ordination(ps.prop, ord.nmds.bray, title="Bray NMDS",label="week",color="ch4...")
-    
+
+![alt tag](./figs/NMDS.png)
+
 Save the plots 
 
     pdf(paste(out,"NMDS.pdf",sep="/"))
