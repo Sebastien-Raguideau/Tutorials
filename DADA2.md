@@ -30,7 +30,7 @@ Let's define the path to our dataset as well as the path to our output folder
     path_out = "/home/ubuntu/Projects/AD_16S"
 
 
-    R1_files=sort(Sys.glob(paste(data,"*R1*",sep="/"), dirmark = FALSE))
+    R1_files=sort(Sys.glob(paste(path_data,"*R1*",sep="/"), dirmark = FALSE))
     R2_files=gsub("R1","R2",R1_files)
     
     temp_filter_path = paste(out,"/temp",sep ="")
