@@ -29,6 +29,17 @@ Let's define the path to our dataset as well as the path to our output folder
     path_data = "/home/ubuntu/Data/AD/16S/data"
     path_out = "/home/ubuntu/Projects/AD_16S"
 
+
+    R1_files=sort(Sys.glob(paste(data,"*R1*",sep="/"), dirmark = FALSE))
+    R2_files=gsub("R1","R2",R1_files)
+    
+    temp_filter_path = paste(out,"/temp",sep ="")
+    dir.create(temp_filter_path)
+    
+    sample.name <- gsub("_R1.fastq","",basename(R1_files))
+    Filtered_R1 <- file.path(temp_filter_path, paste0(sample.name, "_R1_Filtered.fastq"))
+    Filtered_R2 <- file.path(temp_filter_path, paste0(sample.name, "_R2_Filtered.fastq"))
+
 ### Read quality
 Before starting any sort of analysis we need to be sure that the reads are of good quality. 
 Dada2 allows us to do so easily 
